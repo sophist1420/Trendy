@@ -1,13 +1,13 @@
-package com.trendy.login;
+package com.trendy;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TLoginApplication {
+public class TrendyApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(TLoginApplication.class, args);
+		SpringApplication.run(TrendyApplication.class, args);
 	}
 
 }
