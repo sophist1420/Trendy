@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>리뷰 작성</title>
+    <style>
+        .review-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            max-width: 400px;
+            margin: auto;
+        }
+        .review-container textarea {
+            width: 100%;
+            height: 100px;
+            resize: none;
+        }
+        .review-container img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="review-container">
+        <h1>리뷰 작성</h1>
+        <form action="/reviews" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="productId" th:value="${productId}">
+            <label for="image">이미지 업로드:</label>
+            <input type="file" id="image" name="image" accept="image/*">
+            <textarea name="content" maxlength="100" placeholder="리뷰를 작성해주세요 (100자 이내)"></textarea>
+            <p id="char-count">0/100</p>
+            <button type="submit">리뷰 등록하기</button>
+        </form>
+    </div>
+    <script>
+        const textarea = document.querySelector('textarea');
+        const charCount = document.getElementById('char-count');
+
+        textarea.addEventListener('input', () => {
+            charCount.textContent = `${textarea.value.length}/100`;
+        });
+    </script>
+</body>
+</html>

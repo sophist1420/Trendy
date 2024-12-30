@@ -1,19 +1,25 @@
 package com.trendy.login;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Optional;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
+    private final SocialAccountRepository socialAccountRepository;
     private final UserRepository userRepository;
 
-    public CustomOAuth2UserService(UserRepository userRepository) {
+    public CustomOAuth2UserService(SocialAccountRepository socialAccountRepository, UserRepository userRepository) {
+        this.socialAccountRepository = socialAccountRepository;
         this.userRepository = userRepository;
     }
 
@@ -21,114 +27,70 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     public OAuth2User loadUser(OAuth2UserRequest userRequest) {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        Map<String, Object> attributes = oAuth2User.getAttributes();
+        Map<String, Object> originalAttributes = oAuth2User.getAttributes();
 
-        // Debugging: 응답 데이터 출력
-        System.out.println("OAuth2User Attributes: " + attributes);
+        Map<String, Object> attributes = new HashMap<>(originalAttributes);
 
-        // 데이터 추출
-        String name = extractName(attributes, registrationId);
-        String email = extractEmail(attributes, registrationId);
-        String profileImage = extractProfileImage(attributes, registrationId);
+        if ("naver".equals(registrationId)) {
+            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+            if (response != null) {
+                attributes.putAll(response);
+            }
+        }
 
-        // 기본값 설정
-        name = (name == null || name.isEmpty()) ? "Unknown User" : name;
-        email = (email == null || email.isEmpty() || "unknown@example.com".equals(email))
-                ? generateUniqueEmail()
-                : email;
-        profileImage = (profileImage == null || profileImage.isEmpty())
-                ? "https://example.com/default-profile.jpg"
-                : profileImage;
-
-        System.out.println("Extracted Name: " + name);
-        System.out.println("Extracted Email: " + email);
-        System.out.println("Extracted Profile Image: " + profileImage);
-
-        saveOrUpdateUser(name, email, profileImage);
-        return oAuth2User;
-    }
-
-    private String extractName(Map<String, Object> attributes, String registrationId) {
-        if ("google".equals(registrationId)) {
-            return (String) attributes.get("name");
-        } else if ("kakao".equals(registrationId)) {
+        if ("kakao".equals(registrationId)) {
             Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-            if (kakaoAccount == null) {
-                System.out.println("Error: kakaoAccount is null");
-                return "Unknown User";
+            if (kakaoAccount != null) {
+                attributes.putAll(kakaoAccount);
+                attributes.put("nickname", ((Map<String, Object>) kakaoAccount.get("profile")).get("nickname"));
+                attributes.put("profile_image", ((Map<String, Object>) kakaoAccount.get("profile")).get("profile_image_url"));
             }
-
-            Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
-            if (profile == null) {
-                System.out.println("Error: profile is null");
-                return "Unknown User";
-            }
-
-            return (String) profile.get("nickname");
-        }
-        return "Unknown User";
-    }
-
-    private String extractEmail(Map<String, Object> attributes, String registrationId) {
-        if ("google".equals(registrationId)) {
-            return (String) attributes.get("email");
-        } else if ("kakao".equals(registrationId)) {
-            Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-            if (kakaoAccount == null) {
-                System.out.println("Error: kakaoAccount is null");
-                return null;
-            }
-
-            return (String) kakaoAccount.get("email");
-        }
-        return null;
-    }
-
-    private String extractProfileImage(Map<String, Object> attributes, String registrationId) {
-        if ("google".equals(registrationId)) {
-            return (String) attributes.get("picture");
-        } else if ("kakao".equals(registrationId)) {
-            Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-            if (kakaoAccount == null) {
-                System.out.println("Error: kakaoAccount is null");
-                return null;
-            }
-
-            Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
-            if (profile == null) {
-                System.out.println("Error: profile is null");
-                return null;
-            }
-
-            return (String) profile.get("profile_image_url");
-        }
-        return null;
-    }
-
-    private void saveOrUpdateUser(String name, String email, String profileImage) {
-        if (name == null || name.isEmpty()) {
-            System.out.println("Error: Invalid username. Skipping saveOrUpdateUser.");
-            return;
         }
 
-        User user = userRepository.findByEmail(email);
+        String socialId = extractSocialId(attributes, registrationId);
 
-        if (user == null) {
-            user = new User();
-            user.setUsername(name);
-            user.setEmail(email);
-            user.setProfileImageUrl(profileImage);
-            userRepository.save(user);
-            System.out.println("New User Created: " + user.getUsername());
+        System.out.println("[DEBUG] Extracted Social ID: " + socialId);
+
+        Optional<SocialAccount> socialAccountOpt = socialAccountRepository.findBySocialIdAndProvider(
+            socialId, Provider.valueOf(registrationId.toUpperCase()));
+
+        if (socialAccountOpt.isEmpty()) {
+            SocialAccount socialAccount = new SocialAccount();
+            socialAccount.setProvider(Provider.valueOf(registrationId.toUpperCase()));
+            socialAccount.setSocialId(socialId);
+            socialAccountRepository.save(socialAccount);
+
+            System.out.println("[DEBUG] New SocialAccount created: " + socialAccount);
         } else {
-            user.setUsername(name); // 이름 업데이트
-            user.setProfileImageUrl(profileImage);
-            userRepository.save(user);
-            System.out.println("Existing User Updated: " + user.getUsername());
+            System.out.println("[DEBUG] SocialAccount already exists: " + socialAccountOpt.get());
         }
+
+        return new DefaultOAuth2User(
+            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")),
+            attributes,
+            determineAttributeKey(registrationId)
+        );
     }
 
-    private String generateUniqueEmail() {
-        return "user-" + UUID.randomUUID() + "@example.com";
+    private String extractSocialId(Map<String, Object> attributes, String registrationId) {
+        if ("google".equals(registrationId)) {
+            return (String) attributes.get("sub");
+        } else if ("kakao".equals(registrationId)) {
+            return String.valueOf(attributes.get("id"));
+        } else if ("naver".equals(registrationId)) {
+            return (String) attributes.get("id");
+        }
+        throw new IllegalArgumentException("Unsupported registrationId: " + registrationId);
+    }
+
+    private String determineAttributeKey(String registrationId) {
+        if ("google".equals(registrationId)) {
+            return "sub";
+        } else if ("kakao".equals(registrationId)) {
+            return "id";
+        } else if ("naver".equals(registrationId)) {
+            return "id";
+        }
+        throw new IllegalArgumentException("Unsupported registrationId: " + registrationId);
     }
 }

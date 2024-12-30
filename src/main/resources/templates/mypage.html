@@ -5,9 +5,47 @@
 </head>
 <body>
     <h1>마이페이지</h1>
-    <p>안녕하세요, <span th:text="${user['name']}">사용자 이름</span>!</p>
-    <p>이메일: <span th:text="${user['email']}">이메일 정보</span></p>
+    <p>안녕하세요, <span th:text="${username ?: '이름 없음'}">사용자 이름</span>!</p>
+    <p>이메일: <span th:text="${email ?: '이메일 없음'}">이메일 정보</span></p>
     <p>프로필 이미지:</p>
-    <img th:src="${user['picture']}" alt="프로필 이미지">
+    <img th:src="${profileImageUrl ?: '/default-profile.png'}" alt="프로필 이미지" style="max-width: 150px; max-height: 150px;">
+    
+    <!-- 사용자 정보 업데이트 폼 -->
+    <h2>프로필 수정</h2>
+    <form action="/mypage/update" method="post">
+        <label for="email">새 이메일:</label>
+        <input type="email" id="email" name="email" placeholder="새 이메일 입력" required>
+        <br>
+        <label for="profileImageUrl">새 프로필 이미지 URL:</label>
+        <input type="text" id="profileImageUrl" name="profileImageUrl" placeholder="새 프로필 이미지 URL 입력" required>
+        <br>
+        <button type="submit">수정하기</button>
+    </form>
+
+    <h2>주문 내역</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>상품명</th>
+                <th>상태</th>
+                <th>리뷰</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="order : ${orders}">
+                <td th:text="${order.productName}">상품명</td>
+                <td th:text="${order.status}">상태</td>
+                <td>
+                    <button th:if="${order.status == 'completed'}"
+                            th:onclick="'window.location.href=\'/reviews?productId=' + [[${order.productId}]]\''">
+                        리뷰 작성
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 조건 없이 리뷰 작성 페이지로 이동하는 버튼 -->
+    <button onclick="window.location.href='/review'">리뷰 작성</button>
 </body>
 </html>

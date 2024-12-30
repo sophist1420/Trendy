@@ -39,26 +39,46 @@
             background-color: #03C75A;
             color: white;
         }
-		.google-button {
-			background-color:gray;
-			color : yellow;
-		}
+        .google-button {
+            background-color: gray;
+            color: yellow;
+        }
+        .local-login input {
+            width: calc(100% - 20px);
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .local-login .login-btn {
+            background-color: #007BFF;
+            color: white;
+        }
+        .local-login .signup-btn {
+            background-color: #28A745;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <h1>로그인</h1>
-        <!-- 카카오 로그인 버튼 -->
+        
+        <!-- 로컬 로그인 -->
+		<form action="/perform_login" method="post">
+		    <input type="text" name="username" placeholder="아이디" required>
+		    <input type="password" name="password" placeholder="비밀번호" required>
+		    <button type="submit">로그인</button>
+		</form>
+		<a href="/signup">회원가입</a>
+
+        <!-- 소셜 로그인 -->
         <form action="/oauth2/authorization/kakao" method="get">
             <button type="submit" class="kakao-button">카카오 로그인</button>
         </form>
-		
-		<!-- 구글 로그인 버튼 -->
-		<form action="/oauth2/authorization/google" method="get">
-		     <button type="submit" class="google-button">구글 로그인</button>
-		</form>
-				
-        <!-- 네이버 로그인 버튼 -->
+        <form action="/oauth2/authorization/google" method="get">
+            <button type="submit" class="google-button">구글 로그인</button>
+        </form>
         <form action="/oauth2/authorization/naver" method="get">
             <button type="submit" class="naver-button">네이버 로그인</button>
         </form>

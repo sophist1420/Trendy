@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <script>
+		function checkUsername() {
+		    const username = document.getElementById('username').value;
+		    const result = document.getElementById('username-check-result');
+
+		    result.textContent = ""; // 이전 메시지 초기화
+
+		    if (!username) {
+		        result.textContent = "아이디를 입력해주세요.";
+		        result.style.color = "red";
+		        return;
+		    }
+
+		    fetch(`/check-username?username=${username}`)
+		        .then(response => {
+		            if (!response.ok) {
+		                throw new Error('네트워크 문제 발생');
+		            }
+		            return response.text();
+		        })
+		        .then(data => {
+		            if (data === "duplicate") {
+		                result.textContent = "이미 사용 중인 아이디입니다.";
+		                result.style.color = "red";
+		            } else {
+		                result.textContent = "사용 가능한 아이디입니다.";
+		                result.style.color = "green";
+		            }
+		        })
+		        .catch(error => {
+		            result.textContent = "서버와 통신 중 오류가 발생했습니다.";
+		            result.style.color = "red";
+		            console.error(error);
+		        });
+		}
+
+    </script>
+</head>
+<body>
+    <div class="signup-container">
+        <h1>회원가입</h1>
+        <form action="/signup" method="post">
+            <div>
+                <input type="text" id="username" name="username" placeholder="아이디" required>
+                <button type="button" onclick="checkUsername()">중복 확인</button>
+            </div>
+            <p id="username-check-result" style="color: red;"></p>
+            <input type="email" name="email" placeholder="이메일" required>
+            <input type="password" name="password" placeholder="비밀번호" required>
+            <button type="submit">회원가입</button>
+        </form>
+        <p th:if="${error}" th:text="${error}" style="color: red;"></p>
+    </div>
+</body>
+</html>
