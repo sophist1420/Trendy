@@ -55,12 +55,27 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             socialId, Provider.valueOf(registrationId.toUpperCase()));
 
         if (socialAccountOpt.isEmpty()) {
+            // 새로운 사용자 생성
+            User newUser = new User();
+            String extractedEmail = (String) attributes.get("email");
+            String extractedSocialId = extractSocialId(attributes, registrationId);
+
+            // username 설정
+            newUser.setUsername(extractedEmail != null ? extractedEmail : extractedSocialId);
+            newUser.setEmail(extractedEmail);
+            newUser.setPassword("SOCIAL_USER"); // 소셜 사용자 기본값
+            userRepository.save(newUser);
+
+            // SocialAccount 저장
             SocialAccount socialAccount = new SocialAccount();
+            socialAccount.setUser(newUser); // 생성된 사용자와 연결
             socialAccount.setProvider(Provider.valueOf(registrationId.toUpperCase()));
-            socialAccount.setSocialId(socialId);
+            socialAccount.setSocialId(extractedSocialId);
             socialAccountRepository.save(socialAccount);
 
-            System.out.println("[DEBUG] New SocialAccount created: " + socialAccount);
+            System.out.println("[DEBUG] New SocialAccount and User created: " + socialAccount);
+                    
+            System.out.println("[DEBUG] New SocialAccount and User created: " + socialAccount);
         } else {
             System.out.println("[DEBUG] SocialAccount already exists: " + socialAccountOpt.get());
         }

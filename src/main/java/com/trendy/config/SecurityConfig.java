@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 세션 생성 필요 시 생성
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/loginFailure", "check-username", "/signup", "/oauth2/**").permitAll() // 공용 경로 허용
+                .requestMatchers("/", "/login","/payment/**","/naverpay/**", "/kakaopay/**", "/loginFailure", "check-username", "/signup", "/oauth2/**").permitAll() // 공용 경로 허용
                 .requestMatchers("/mypage", "/reviews/**").hasRole("USER") // 권한이 필요한 경로
                 .anyRequest().authenticated() // 나머지 경로 인증 필요
             )

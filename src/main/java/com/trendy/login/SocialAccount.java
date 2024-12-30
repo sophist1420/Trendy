@@ -10,9 +10,10 @@ public class SocialAccount {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long socialAccountId;
+    
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user; // Users 테이블과 연관관계 설정
 
     @Enumerated(EnumType.STRING)
