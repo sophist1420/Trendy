@@ -29,6 +29,14 @@ public class CustomUserDetails implements UserDetails {
         return user.getPassword(); // User 엔티티의 password 반환
     }
 
+    public String getEmail() {
+        return user.getEmail(); // User 엔티티의 email 반환
+    }
+
+    public String getProfileImageUrl() {
+        return user.getProfileImageUrl(); // User 엔티티의 profileImageUrl 반환
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 권한 설정 (기본적으로 ROLE_USER를 부여)
