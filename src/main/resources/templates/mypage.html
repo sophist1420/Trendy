@@ -1,51 +1,75 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
-    <title>마이페이지</title>
+    <title>포트원 결제 테스트</title>
+    <!-- PortOne JavaScript SDK -->
+    <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 </head>
 <body>
-    <h1>마이페이지</h1>
-    <p>안녕하세요, <span th:text="${username ?: '이름 없음'}">사용자 이름</span>!</p>
-    <p>이메일: <span th:text="${email ?: '이메일 없음'}">이메일 정보</span></p>
-    <p>프로필 이미지:</p>
-    <img th:src="${profileImageUrl ?: '/default-profile.png'}" alt="프로필 이미지" style="max-width: 150px; max-height: 150px;">
-    
-    <!-- 사용자 정보 업데이트 폼 -->
-    <h2>프로필 수정</h2>
-    <form action="/mypage/update" method="post">
-        <label for="email">새 이메일:</label>
-        <input type="email" id="email" name="email" placeholder="새 이메일 입력" required>
-        <br>
-        <label for="profileImageUrl">새 프로필 이미지 URL:</label>
-        <input type="text" id="profileImageUrl" name="profileImageUrl" placeholder="새 프로필 이미지 URL 입력" required>
-        <br>
-        <button type="submit">수정하기</button>
-    </form>
+    <h1>포트원 결제 테스트</h1>
+    <button type="button" onclick="payWithKakao()">카카오페이 결제</button>
+    <button type="button" onclick="payWithToss()">토스페이 결제</button>
 
-    <h2>주문 내역</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>상품명</th>
-                <th>상태</th>
-                <th>리뷰</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="order : ${orders}">
-                <td th:text="${order.productName}">상품명</td>
-                <td th:text="${order.status}">상태</td>
-                <td>
-                    <button th:if="${order.status == 'completed'}"
-                            th:onclick="'window.location.href=\'/reviews?productId=' + [[${order.productId}]]\''">
-                        리뷰 작성
-                    </button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <script>
+        // 포트원 SDK 초기화
+        if (!window.PortOne) {
+            console.error("포트원 SDK가 로드되지 않았습니다.");
+        } else {
+            const PortOne = window.PortOne;
+            PortOne.init("imp55088383"); // 가맹점 식별 코드
+        }
 
-    <!-- 조건 없이 리뷰 작성 페이지로 이동하는 버튼 -->
-    <button onclick="window.location.href='/review'">리뷰 작성</button>
+        // 카카오페이 결제 요청 함수
+        async function payWithKakao() {
+            const paymentData = {
+                storeId: "store-18813bd1-3b7b-4b67-9e8e-920a5b1f241c",
+                channelKey: "channel-key-8ae4a59c-a2e3-46f2-8fc1-66a0dfc5b4ad",
+                paymentId: `payment-${crypto.randomUUID()}`,
+                orderName: "KakaoPay 테스트 결제",
+                totalAmount: 5000,
+                currency: "CURRENCY_KRW",
+                payMethod: "EASY_PAY",
+            };
+
+            try {
+                const response = await PortOne.requestPayment(paymentData);
+                if (response.code) {
+                    console.error("결제 실패:", response.message);
+                    alert(`결제 실패: ${response.message}`);
+                } else {
+                    alert("결제가 완료되었습니다.");
+                }
+            } catch (error) {
+                console.error("결제 요청 중 오류 발생:", error);
+                alert("결제 요청 중 오류가 발생했습니다.");
+            }
+        }
+
+        // 토스페이 결제 요청 함수
+        async function payWithToss() {
+            const paymentData = {
+                storeId: "store-18813bd1-3b7b-4b67-9e8e-920a5b1f241c",
+                channelKey: "channel-key-195c52a0-6406-4c37-bee3-f53662e8fb3f",
+                paymentId: `payment-${crypto.randomUUID()}`,
+                orderName: "TossPay 테스트 결제",
+                totalAmount: 5000,
+                currency: "CURRENCY_KRW",
+                payMethod: "EASY_PAY",
+            };
+
+            try {
+                const response = await PortOne.requestPayment(paymentData);
+                if (response.code) {
+                    console.error("결제 실패:", response.message);
+                    alert(`결제 실패: ${response.message}`);
+                } else {
+                    alert("결제가 완료되었습니다.");
+                }
+            } catch (error) {
+                console.error("결제 요청 중 오류 발생:", error);
+                alert("결제 요청 중 오류가 발생했습니다.");
+            }
+        }
+    </script>
 </body>
 </html>
