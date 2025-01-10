@@ -1,111 +1,109 @@
 package com.trendy.login;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final SocialAccountRepository socialAccountRepository;
-    private final UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
-    public CustomOAuth2UserService(SocialAccountRepository socialAccountRepository, UserRepository userRepository) {
-        this.socialAccountRepository = socialAccountRepository;
-        this.userRepository = userRepository;
-    }
+    @Autowired
+    private SocialAccountRepository socialAccountRepository;
 
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        Map<String, Object> originalAttributes = oAuth2User.getAttributes();
+    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        OAuth2User oauth2User = super.loadUser(userRequest);
+        String providerStr = userRequest.getClientRegistration().getRegistrationId();
+        String email = null;
+        String socialId = null;
+        String profileImageUrl = null;
 
-        Map<String, Object> attributes = new HashMap<>(originalAttributes);
+        logger.info("Provider: {}", providerStr);
+        logger.debug("Attributes: {}", oauth2User.getAttributes());
 
-        if ("naver".equals(registrationId)) {
-            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
-            if (response != null) {
-                attributes.putAll(response);
+        try {
+            switch (providerStr) {
+                case "google":
+                    email = oauth2User.getAttribute("email");
+                    socialId = oauth2User.getAttribute("sub");
+                    profileImageUrl = oauth2User.getAttribute("picture");
+                    break;
+
+                case "naver":
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> response = (Map<String, Object>) oauth2User.getAttribute("response");
+                    if (response != null) {
+                        email = (String) response.get("email");
+                        socialId = (String) response.get("id");
+                        profileImageUrl = (String) response.get("profile_image");
+                    }
+                    break;
+
+                case "kakao":
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> kakaoAccount = (Map<String, Object>) oauth2User.getAttribute("kakao_account");
+                    if (kakaoAccount != null) {
+                        email = (String) kakaoAccount.get("email");
+                        socialId = String.valueOf(oauth2User.getAttribute("id"));
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+                        if (profile != null) {
+                            profileImageUrl = (String) profile.get("profile_image_url");
+                        }
+                    }
+                    break;
+
+                default:
+                    throw new OAuth2AuthenticationException("Unsupported provider: " + providerStr);
             }
-        }
 
-        if ("kakao".equals(registrationId)) {
-            Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-            if (kakaoAccount != null) {
-                attributes.putAll(kakaoAccount);
-                attributes.put("nickname", ((Map<String, Object>) kakaoAccount.get("profile")).get("nickname"));
-                attributes.put("profile_image", ((Map<String, Object>) kakaoAccount.get("profile")).get("profile_image_url"));
+            if (email == null || socialId == null || providerStr == null) {
+                throw new OAuth2AuthenticationException("Required fields are missing (email, socialId, provider)");
             }
+
+            Optional<SocialAccount> existingAccount = socialAccountRepository.findBySocialIdAndProvider(
+                socialId, Provider.valueOf(providerStr.toUpperCase()));
+
+            if (existingAccount.isEmpty()) {
+                SocialAccount socialAccount = new SocialAccount();
+                socialAccount.setEmail(email);
+                socialAccount.setProvider(Provider.valueOf(providerStr.toUpperCase()));
+                socialAccount.setSocialId(socialId);
+                socialAccount.setProfileImageUrl(profileImageUrl);
+                socialAccountRepository.save(socialAccount);
+                logger.info("New account created with email: {}", email);
+            } else {
+                logger.info("Account already exists for socialId: {}", socialId);
+            }
+
+            return new DefaultOAuth2User(
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
+                Map.of(
+                    "email", email,
+                    "socialId", socialId,
+                    "profileImageUrl", profileImageUrl
+                ),
+                "email"
+            );
+
+        } catch (Exception e) {
+            logger.error("OAuth2 authentication error: {}", e.getMessage(), e);
+            throw new OAuth2AuthenticationException("Authentication failed: " + e.getMessage());
         }
-
-        String socialId = extractSocialId(attributes, registrationId);
-
-        System.out.println("[DEBUG] Extracted Social ID: " + socialId);
-
-        Optional<SocialAccount> socialAccountOpt = socialAccountRepository.findBySocialIdAndProvider(
-            socialId, Provider.valueOf(registrationId.toUpperCase()));
-
-        if (socialAccountOpt.isEmpty()) {
-            // 새로운 사용자 생성
-            User newUser = new User();
-            String extractedEmail = (String) attributes.get("email");
-            String extractedSocialId = extractSocialId(attributes, registrationId);
-
-            // username 설정
-            newUser.setUsername(extractedEmail != null ? extractedEmail : extractedSocialId);
-            newUser.setEmail(extractedEmail);
-            newUser.setPassword("SOCIAL_USER"); // 소셜 사용자 기본값
-            userRepository.save(newUser);
-
-            // SocialAccount 저장
-            SocialAccount socialAccount = new SocialAccount();
-            socialAccount.setUser(newUser); // 생성된 사용자와 연결
-            socialAccount.setProvider(Provider.valueOf(registrationId.toUpperCase()));
-            socialAccount.setSocialId(extractedSocialId);
-            socialAccountRepository.save(socialAccount);
-
-            System.out.println("[DEBUG] New SocialAccount and User created: " + socialAccount);
-                    
-            System.out.println("[DEBUG] New SocialAccount and User created: " + socialAccount);
-        } else {
-            System.out.println("[DEBUG] SocialAccount already exists: " + socialAccountOpt.get());
-        }
-
-        return new DefaultOAuth2User(
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")),
-            attributes,
-            determineAttributeKey(registrationId)
-        );
-    }
-
-    private String extractSocialId(Map<String, Object> attributes, String registrationId) {
-        if ("google".equals(registrationId)) {
-            return (String) attributes.get("sub");
-        } else if ("kakao".equals(registrationId)) {
-            return String.valueOf(attributes.get("id"));
-        } else if ("naver".equals(registrationId)) {
-            return (String) attributes.get("id");
-        }
-        throw new IllegalArgumentException("Unsupported registrationId: " + registrationId);
-    }
-
-    private String determineAttributeKey(String registrationId) {
-        if ("google".equals(registrationId)) {
-            return "sub";
-        } else if ("kakao".equals(registrationId)) {
-            return "id";
-        } else if ("naver".equals(registrationId)) {
-            return "id";
-        }
-        throw new IllegalArgumentException("Unsupported registrationId: " + registrationId);
     }
 }

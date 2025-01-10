@@ -1,8 +1,12 @@
 package com.trendy.login;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "Users")
 public class User {
@@ -22,8 +26,18 @@ public class User {
     @Column
     private String profileImageUrl;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+
+    @Column(nullable = true)
+    private String address1;
+
+    @Column(nullable = true)
+    private String address2;
+
+    @Column(nullable = true)
+    private String address3;
 
     // Getters and Setters
     public Long getUserId() {

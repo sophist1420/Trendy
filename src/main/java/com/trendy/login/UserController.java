@@ -22,12 +22,12 @@ public class UserController {
                 model.addAttribute("username", oauth2User.getAttribute("name"));
                 model.addAttribute("email", oauth2User.getAttribute("email"));
                 model.addAttribute("profileImageUrl", oauth2User.getAttribute("picture"));
-            } else if (principal instanceof UserDetails) {
-                UserDetails userDetails = (UserDetails) principal;
+            } else if (principal instanceof CustomUserDetails) {
+                CustomUserDetails userDetails = (CustomUserDetails) principal;
                 // 일반 사용자 정보 추가
                 model.addAttribute("username", userDetails.getUsername());
-                model.addAttribute("email", ((CustomUserDetails) userDetails).getEmail());
-                model.addAttribute("profileImageUrl", ((CustomUserDetails) userDetails).getProfileImageUrl());
+                model.addAttribute("email", userDetails.getEmail());
+                model.addAttribute("profileImageUrl", userDetails.getProfileImageUrl());
             } else {
                 // 로그인되지 않은 사용자 기본값
                 model.addAttribute("username", "이름 없음");

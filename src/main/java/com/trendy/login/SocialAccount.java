@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Social_Accounts")
+@Table(name = "social_accounts")
 public class SocialAccount {
 
     @Id
@@ -16,27 +16,19 @@ public class SocialAccount {
     @JoinColumn(name = "user_id")
     private User user; // Users 테이블과 연관관계 설정
 
+    @Column(nullable = true)
+    private String socialId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Provider provider;
 
     @Column(nullable = false)
-    private String socialId;
-
-    @Column
     private String email;
-
-    @Column
-    private String accessToken;
-
-    @Column
-    private String refreshToken;
-
-    @Column
-    private LocalDateTime tokenExpiry;
-
-    @Column
     private String profileImageUrl;
+    private String accessToken;
+    private String refreshToken;
+    private LocalDateTime tokenExpiry;
 
     // Getters and Setters
     public Long getSocialAccountId() {
@@ -55,20 +47,20 @@ public class SocialAccount {
         this.user = user;
     }
 
-    public Provider getProvider() {
-        return provider;
-    }
-
-    public void setProvider(Provider provider) {
-        this.provider = provider;
-    }
-
     public String getSocialId() {
         return socialId;
     }
 
     public void setSocialId(String socialId) {
         this.socialId = socialId;
+    }
+
+    public Provider getProvider() {
+        return provider;
+    }
+
+    public void setProvider(Provider provider) {
+        this.provider = provider;
     }
 
     public String getEmail() {

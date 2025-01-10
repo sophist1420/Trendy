@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>장바구니</title>
+    <style>
+        /* 기존 스타일 유지 */
+    </style>
+</head>
+<body>
+    <header>Trendy</header>
+    <div class="container">
+        <div class="cart-items" id="cart-items">
+            <!-- 장바구니 항목이 JavaScript로 동적으로 렌더링됩니다 -->
+        </div>
+
+        <div class="cart-summary">
+            <div class="summary-title">선택 주문정보</div>
+            <div class="summary-item">
+                <span class="summary-item-title">총 상품금액</span>
+                <span class="summary-item-value" id="total-price">0원</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-item-title">총 검수비</span>
+                <span class="summary-item-value">무료</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-item-title">총 수수료</span>
+                <span class="summary-item-value">5,600원</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-item-title">총 배송비</span>
+                <span class="summary-item-value">3,000원</span>
+            </div>
+            <div class="summary-total">
+                총 예상 결제금액: <span id="final-price">0원</span>
+            </div>
+            <button class="checkout-button" id="checkout-button">0원 - 총 0건 주문하기</button>
+        </div>
+    </div>
+
+    <script>
+        async function fetchCartItems() {
+            try {
+                const response = await fetch('/api/cart', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const cartItems = await response.json();
+                    renderCartItems(cartItems);
+                } else {
+                    console.error('Failed to fetch cart items.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+		function renderCartItems(cartItems) {
+		    const container = document.getElementById('cart-items');
+		    const totalPriceElement = document.getElementById('total-price');
+		    const finalPriceElement = document.getElementById('final-price');
+		    const checkoutButton = document.getElementById('checkout-button');
+
+		    container.innerHTML = ''; // 기존 항목 초기화
+		    let totalPrice = 0;
+
+		    cartItems.forEach(item => {
+		        totalPrice += item.price * item.quantity;
+
+		        const html = `
+		            <div class="cart-item">
+		                <img src="${item.productImage}" alt="${item.productName}" class="cart-item-image">
+		                <div class="cart-item-details">
+		                    <div class="cart-item-title">${item.productName}</div>
+		                    <div class="cart-item-size">Size: ${item.size}</div>
+		                    <div class="cart-item-price">
+		                        ${item.price.toLocaleString()}원 x ${item.quantity}개 = ${(item.price * item.quantity).toLocaleString()}원
+		                    </div>
+		                </div>
+		            </div>`;
+		        container.insertAdjacentHTML('beforeend', html);
+		    });
+
+		    // 총 결제 금액 업데이트
+		    const inspectionFee = 0; // 검수비
+		    const deliveryFee = 3000; // 배송비
+		    totalPriceElement.textContent = `${totalPrice.toLocaleString()}원`;
+		    finalPriceElement.textContent = `${(totalPrice + inspectionFee + deliveryFee).toLocaleString()}원`;
+		    checkoutButton.textContent = `${(totalPrice + inspectionFee + deliveryFee).toLocaleString()}원 - 총 ${cartItems.length}건 주문하기`;
+		}
+
+        fetchCartItems();
+    </script>
+</body>
+</html>

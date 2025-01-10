@@ -1,7 +1,11 @@
 package com.trendy.login;
 
 public enum Provider {
-    KAKAO,
+    GOOGLE,
     NAVER,
-    GOOGLE;
+    KAKAO;
+
+    public static Provider fromString(String provider) {
+        return Provider.valueOf(provider.toUpperCase());
+    }
 }

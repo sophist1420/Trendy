@@ -1,46 +1,167 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>리뷰 작성</title>
+    <title>상품 리뷰</title>
     <style>
-        .review-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            max-width: 400px;
-            margin: auto;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        .review-container textarea {
+        .product-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .product-image {
+            max-width: 200px;
+            margin-bottom: 10px;
+        }
+        .review-form {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .reviews-list {
+            margin-top: 30px;
+        }
+        .review-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        textarea {
             width: 100%;
-            height: 100px;
-            resize: none;
+            min-height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            box-sizing: border-box;
         }
-        .review-container img {
-            max-width: 100%;
-            height: auto;
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .review-actions {
+            margin-top: 10px;
+        }
+        .review-actions button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .edit-form {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .edit-form textarea {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="review-container">
-        <h1>리뷰 작성</h1>
-        <form action="/reviews" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="productId" th:value="${productId}">
-            <label for="image">이미지 업로드:</label>
-            <input type="file" id="image" name="image" accept="image/*">
-            <textarea name="content" maxlength="100" placeholder="리뷰를 작성해주세요 (100자 이내)"></textarea>
-            <p id="char-count">0/100</p>
-            <button type="submit">리뷰 등록하기</button>
-        </form>
-    </div>
-    <script>
-        const textarea = document.querySelector('textarea');
-        const charCount = document.getElementById('char-count');
+    <div class="container">
+        <!-- 상품 정보 섹션 -->
+        <div class="product-info" th:if="${product != null}">
+            <h2>상품 정보</h2>
+            <img th:if="${product != null && product.imageUrl != null}" 
+                 th:src="${product.imageUrl}" 
+                 class="product-image" 
+                 alt="상품 이미지">
+            <h3 th:text="${product != null ? product.name : ''}">상품명</h3>
+            <p th:text="${product != null ? '가격: ' + product.price + '원' : ''}">가격</p>
+        </div>
 
-        textarea.addEventListener('input', () => {
-            charCount.textContent = `${textarea.value.length}/100`;
-        });
+        <!-- 리뷰 작성 폼 -->
+        <div class="review-form">
+            <h3>리뷰 작성</h3>
+            <form th:action="@{/review}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="productId">상품 선택</label>
+                    <select name="productId" id="productId" required>
+                        <option value="">리뷰할 상품을 선택하세요</option>
+                        <option th:each="product : ${availableProducts}"
+                                th:value="${product.id}"
+                                th:text="${product.name}">상품명</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <textarea name="content" required 
+                              placeholder="이 상품에 대한 솔직한 리뷰를 작성해주세요."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="image">사진 첨부</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+
+                <button type="submit">리뷰 등록</button>
+            </form>
+        </div>
+
+        <!-- 기존 리뷰 목록 -->
+        <div class="reviews-list">
+            <h3>상품 리뷰 목록</h3>
+            <div th:if="${reviews.empty}" class="no-reviews">
+                <p>아직 작성된 리뷰가 없습니다.</p>
+            </div>
+            <div th:each="review : ${reviews}" class="review-item">
+                <p th:text="${review.content}">리뷰 내용</p>
+                <img th:if="${review.image != null}" 
+                     th:src="@{'/images/review/' + ${review.reviewId}}" 
+                     alt="리뷰 이미지">
+                <small th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">작성일</small>
+                
+                <!-- 수정/삭제 버튼 추가 -->
+                <div class="review-actions">
+                    <button th:onclick="'editReview(' + ${review.reviewId} + ')'">수정</button>
+                    <form th:action="@{/review/delete/{reviewId}(reviewId=${review.reviewId})}" 
+                          method="post" 
+                          style="display: inline;">
+                        <button type="submit" 
+                                onclick="return confirm('정말 삭제하시겠습니까?')">삭제</button>
+                    </form>
+                </div>
+                
+                <!-- 수정 폼 (기본적으로 숨겨져 있음) -->
+                <div th:id="'editForm-' + ${review.reviewId}" style="display: none;" class="edit-form">
+                    <form th:action="@{/review/edit/{reviewId}(reviewId=${review.reviewId})}" 
+                          method="post" 
+                          enctype="multipart/form-data">
+                        <textarea name="content" 
+                                  th:text="${review.content}" 
+                                  required></textarea>
+                        <div class="form-group">
+                            <label for="image">새 이미지 첨부 (선택사항)</label>
+                            <input type="file" name="image" accept="image/*">
+                        </div>
+                        <button type="submit">수정 완료</button>
+                        <button type="button" th:onclick="'cancelEdit(' + ${review.reviewId} + ')'">취소</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 추가 -->
+    <script>
+    function editReview(reviewId) {
+        // 수정 폼 표시
+        document.getElementById('editForm-' + reviewId).style.display = 'block';
+    }
+
+    function cancelEdit(reviewId) {
+        // 수정 폼 숨기기
+        document.getElementById('editForm-' + reviewId).style.display = 'none';
+    }
     </script>
 </body>
 </html>

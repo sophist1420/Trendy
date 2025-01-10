@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상품 필터링</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>상품 필터링</h1>
+
+    <!-- 브랜드 필터 -->
+    <div>
+        <h2>브랜드</h2>
+        <label><input type="checkbox" name="brand" value="Nike"> Nike</label>
+        <label><input type="checkbox" name="brand" value="Adidas"> Adidas</label>
+        <label><input type="checkbox" name="brand" value="Asics"> Asics</label>
+        <label><input type="checkbox" name="brand" value="New_Balance"> New Balance</label>
+        <label><input type="checkbox" name="brand" value="Reebok"> Reebok</label>
+    </div>
+	<br>
+    <!-- 색상 필터 -->
+    <div>
+        <h2>색상</h2>
+        <label><input type="checkbox" name="color" value="Red"> Red</label>
+        <label><input type="checkbox" name="color" value="Blue"> Blue</label>
+        <label><input type="checkbox" name="color" value="Black"> Black</label>
+        <label><input type="checkbox" name="color" value="White"> White</label>
+        <label><input type="checkbox" name="color" value="Green"> Green</label>
+    </div>
+	<br>
+    <!-- 사이즈 필터 -->
+    <div>
+        <h2>사이즈</h2>
+        <label><input type="checkbox" name="size" value="230"> 230</label>
+        <label><input type="checkbox" name="size" value="240"> 240</label>
+        <label><input type="checkbox" name="size" value="250"> 250</label>
+        <label><input type="checkbox" name="size" value="260"> 260</label>
+        <label><input type="checkbox" name="size" value="270"> 270</label>
+        <label><input type="checkbox" name="size" value="280"> 280</label>
+        <label><input type="checkbox" name="size" value="290"> 290</label>
+    </div>
+
+    <!-- 성별 필터 -->
+    <div>
+        <h2>성별</h2>
+        <label><input type="checkbox" name="gender" value="male"> 남성</label>
+        <label><input type="checkbox" name="gender" value="female"> 여성</label>
+    </div>
+	<br>
+	<div>
+	    <h2>작성자</h2>
+	    <label><input type="checkbox" name="created_by" value="seller"> Seller</label>
+	</div>
+	<br>
+    <button id="filter-submit">필터 적용</button>
+
+    <div id="filter-results">
+        <!-- 필터링 결과가 표시될 공간 -->
+    </div>
+
+    <script src="/static/filter.js"></script>
+</body>
+</html>

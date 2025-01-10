@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>리뷰 수정</title>
+</head>
+<body>
+    <h2>리뷰 수정</h2>
+    <form th:action="@{/review/edit/{reviewId}(reviewId=${review.reviewId})}" 
+          method="post" 
+          enctype="multipart/form-data">
+        <textarea name="content" th:text="${review.content}" required></textarea>
+        <input type="file" name="image" accept="image/*">
+        <button type="submit">수정</button>
+    </form>
+    
+    <form th:action="@{/review/delete/{reviewId}(reviewId=${review.reviewId})}" 
+          method="post" 
+          style="display: inline;">
+        <button type="submit" 
+                onclick="return confirm('정말로 삭제하시겠습니까?')">삭제</button>
+    </form>
+</body>
+</html> 

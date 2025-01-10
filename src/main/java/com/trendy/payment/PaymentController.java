@@ -8,6 +8,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/payment")
+@CrossOrigin(origins = "http://localhost:3000", 
+    allowedHeaders = "*", 
+    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, 
+               RequestMethod.DELETE, RequestMethod.OPTIONS},
+    allowCredentials = "true")
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -26,9 +31,15 @@ public class PaymentController {
             int amount = Integer.parseInt(request.get("amount").toString());
 
             String redirectUrl = paymentService.requestPayment(paymentType, orderId, userId, amount);
-            return ResponseEntity.ok(Map.of("redirectUrl", redirectUrl));
+            return ResponseEntity.ok()
+                .header("Access-Control-Allow-Origin", "http://localhost:3000")
+                .header("Access-Control-Allow-Credentials", "true")
+                .body(Map.of("redirectUrl", redirectUrl));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest()
+                .header("Access-Control-Allow-Origin", "http://localhost:3000")
+                .header("Access-Control-Allow-Credentials", "true")
+                .body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -36,9 +47,17 @@ public class PaymentController {
     public ResponseEntity<Map<String, Object>> verifyPayment(@RequestBody Map<String, String> request) {
         try {
             Map<String, Object> result = paymentService.verifyPayment(request.get("imp_uid"));
-            return ResponseEntity.ok(result);
+            return ResponseEntity
+                .ok()
+                .header("Access-Control-Allow-Origin", "http://localhost:3000")
+                .header("Access-Control-Allow-Credentials", "true")
+                .body(result);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .header("Access-Control-Allow-Origin", "http://localhost:3000")
+                .header("Access-Control-Allow-Credentials", "true")
+                .body(Map.of("error", e.getMessage()));
         }
     }
 }

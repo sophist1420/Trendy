@@ -3,7 +3,7 @@
 <head>
     <title>포트원 결제 테스트</title>
     <!-- PortOne JavaScript SDK -->
-    <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
 </head>
 <body>
     <h1>포트원 결제 테스트</h1>
@@ -11,64 +11,45 @@
     <button type="button" onclick="payWithToss()">토스페이 결제</button>
 
     <script>
-        // 포트원 SDK 초기화
-        if (!window.PortOne) {
+        if (!window.IMP) {
             console.error("포트원 SDK가 로드되지 않았습니다.");
         } else {
-            const PortOne = window.PortOne;
-            PortOne.init("imp55088383"); // 가맹점 식별 코드
+            const IMP = window.IMP;
+            IMP.init("imp55088383");
         }
 
-        // 카카오페이 결제 요청 함수
         async function payWithKakao() {
-            const paymentData = {
-                storeId: "store-18813bd1-3b7b-4b67-9e8e-920a5b1f241c",
-                channelKey: "channel-key-8ae4a59c-a2e3-46f2-8fc1-66a0dfc5b4ad",
-                paymentId: `payment-${crypto.randomUUID()}`,
-                orderName: "KakaoPay 테스트 결제",
-                totalAmount: 5000,
-                currency: "CURRENCY_KRW",
-                payMethod: "EASY_PAY",
-            };
-
-            try {
-                const response = await PortOne.requestPayment(paymentData);
-                if (response.code) {
-                    console.error("결제 실패:", response.message);
-                    alert(`결제 실패: ${response.message}`);
-                } else {
-                    alert("결제가 완료되었습니다.");
-                }
-            } catch (error) {
-                console.error("결제 요청 중 오류 발생:", error);
-                alert("결제 요청 중 오류가 발생했습니다.");
-            }
+            IMP.request_pay({
+                pg: "kakaopay.TC0ONETIME",
+                pay_method: "card",
+                merchant_uid: `mid_${Date.now()}`,
+                name: "KakaoPay 테스트 결제",
+                amount: 5000,
+                buyer_email: "test@test.com",
+                buyer_name: "테스터",
+                buyer_tel: "010-0000-0000",
+                buyer_addr: "서울특별시 강남구 삼성동",
+                buyer_postcode: "123-456"
+            }, function (rsp) {
+                // ... 결제 결과 처리
+            });
         }
 
-        // 토스페이 결제 요청 함수
         async function payWithToss() {
-            const paymentData = {
-                storeId: "store-18813bd1-3b7b-4b67-9e8e-920a5b1f241c",
-                channelKey: "channel-key-195c52a0-6406-4c37-bee3-f53662e8fb3f",
-                paymentId: `payment-${crypto.randomUUID()}`,
-                orderName: "TossPay 테스트 결제",
-                totalAmount: 5000,
-                currency: "CURRENCY_KRW",
-                payMethod: "EASY_PAY",
-            };
-
-            try {
-                const response = await PortOne.requestPayment(paymentData);
-                if (response.code) {
-                    console.error("결제 실패:", response.message);
-                    alert(`결제 실패: ${response.message}`);
-                } else {
-                    alert("결제가 완료되었습니다.");
-                }
-            } catch (error) {
-                console.error("결제 요청 중 오류 발생:", error);
-                alert("결제 요청 중 오류가 발생했습니다.");
-            }
+            IMP.request_pay({
+                pg: "tosspay",  // 토스페이는 단순히 'tosspay'로 설정
+                pay_method: "card",
+                merchant_uid: `mid_${Date.now()}`,
+                name: "Toss 테스트 결제",
+                amount: 5000,
+                buyer_email: "test@test.com",
+                buyer_name: "테스터",
+                buyer_tel: "010-0000-0000",
+                buyer_addr: "서울특별시 강남구 삼성동",
+                buyer_postcode: "123-456"
+            }, function (rsp) {
+                // ... 결제 결과 처리
+            });
         }
     </script>
     

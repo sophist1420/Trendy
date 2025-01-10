@@ -1,18 +1,17 @@
 package com.trendy.login.signup;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 
 import com.trendy.login.User;
 import com.trendy.login.UserRepository;
 
-@Controller
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/signup")
 public class SignupController {
 
     private final UserRepository userRepository;
@@ -23,69 +22,81 @@ public class SignupController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // 회원가입 페이지 요청
-    @GetMapping("/signup")
-    public String signupForm() {
-        return "signup";
+    @PostMapping
+    public ResponseEntity<?> signup(@RequestBody User user) {
+        Map<String, String> response = new HashMap<>();
+
+        try {
+            // 아이디 검증
+            if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+                response.put("status", "error");
+                response.put("message", "아이디는 필수 입력값입니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 아이디 중복 확인
+            if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+                response.put("status", "error");
+                response.put("message", "이미 사용 중인 아이디입니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 이메일 검증
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                response.put("status", "error");
+                response.put("message", "이메일은 필수 입력값입니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 비밀번호 검증
+            if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+                response.put("status", "error");
+                response.put("message", "비밀번호는 필수 입력값입니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (user.getPassword().length() < 8) {
+                response.put("status", "error");
+                response.put("message", "비밀번호는 8자 이상이어야 합니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 비밀번호 암호화
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+            // 사용자 저장
+            userRepository.save(user);
+
+            response.put("status", "success");
+            response.put("message", "회원가입이 완료되었습니다.");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "회원가입 중 오류가 발생했습니다. 관리자에게 문의해주세요.");
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
-    @PostMapping("/signup")
-    public String signup(@ModelAttribute("user") User user, Model model) {
-        // 사용자 입력값 직접 검증
-        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            model.addAttribute("error", "아이디는 필수 입력값입니다.");
-            return "signup";
-        }
-
-        if (user.getUsername().length() < 3 || user.getUsername().length() > 20) {
-            model.addAttribute("error", "아이디는 3자 이상, 20자 이하로 입력해주세요.");
-            return "signup";
-        }
-
-        if (userRepository.findByUsername(user.getUsername()) != null) {
-            model.addAttribute("error", "이미 사용 중인 아이디입니다.");
-            return "signup";
-        }
-
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            model.addAttribute("error", "이메일은 필수 입력값입니다.");
-            return "signup";
-        }
-
-        if (!user.getEmail().contains("@")) {
-            model.addAttribute("error", "유효한 이메일 주소를 입력해주세요.");
-            return "signup";
-        }
-
-        if (userRepository.findByEmail(user.getEmail()) != null) {
-            model.addAttribute("error", "이미 사용 중인 이메일입니다.");
-            return "signup";
-        }
-
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            model.addAttribute("error", "비밀번호는 필수 입력값입니다.");
-            return "signup";
-        }
-
-        if (user.getPassword().length() < 8) {
-            model.addAttribute("error", "비밀번호는 최소 8자 이상이어야 합니다.");
-            return "signup";
-        }
-
-        // 비밀번호 암호화 후 저장
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        return "redirect:/login";
-    }
-
-    // 사용자 이름 중복 확인 API
     @GetMapping("/check-username")
-    @ResponseBody
-    public String checkUsername(@RequestParam("username") String username) {
-        if (userRepository.findByUsername(username) != null) {
-            return "duplicate";
-        }
-        return "available";
-    }
+    public ResponseEntity<?> checkUsername(@RequestParam("username") String username) {
+        Map<String, String> response = new HashMap<>();
 
+        if (username == null || username.trim().isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "아이디를 입력해주세요.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        boolean isDuplicate = userRepository.findByUsername(username).isPresent();
+        if (isDuplicate) {
+            response.put("status", "error");
+            response.put("message", "이미 사용 중인 아이디입니다.");
+        } else {
+            response.put("status", "success");
+            response.put("message", "사용 가능한 아이디입니다.");
+        }
+
+        return ResponseEntity.ok(response);
+    }
 }
